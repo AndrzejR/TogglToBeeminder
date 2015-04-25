@@ -3,16 +3,19 @@ import json
 from datetime import date, timedelta
 
 api_token = None
-with open('token.txt', 'r') as f:
-	api_token = f.readline()
+with open('settings.conf', 'r') as f:
+	settings = f.read().splitlines()
+	api_token = settings[0]
+	user_agent = settings[1]
+	workspace_id = settings[2]
 
 yesterday = date.today() - timedelta(days=1)
 
 yesterday = yesterday.isoformat()
 
-print(yesterday)
+# print(yesterday)
 
-payload = {'user_agent':'andrzej.ruszczewski@gmail.com', 'workspace_id':644218,
+payload = {'user_agent':user_agent, 'workspace_id':workspace_id,
 			 'since':yesterday, 'until':yesterday, 'grouping':'clients',
 			 'subgrouping':'projects'}
 
