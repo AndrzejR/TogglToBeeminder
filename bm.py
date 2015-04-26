@@ -58,7 +58,7 @@ class BeemAPI:
 		logging.debug(date)
 
 		
-		url = BeemAPIURL
+		url = BeemAPI.URL
 		url += '/users/' + str(self.user)
 		url += '/goals/' + str(self.goal)
 		url += '/datapoints.json'
@@ -79,11 +79,36 @@ class BeemAPI:
 
 		return result
 
-	def insert(data):
-		pass
+	def insert(self, data, debug=False):
 
-	def update(id, data):
-		pass
+		url = BeemAPI.URL
+		url += '/users/' + str(self.user)
+		url += '/goals/' + str(self.goal)
+		url += '/datapoints.json'
+
+		params = {'auth_token':self.auth_token, 'value':data, 'comment':'Added by TogglToBM'}
+
+		if not debug:
+			r = requests.post(url, params=params)
+			logging.debug('Inserting... Response:')
+			logging.debug(json.dumps(r.json(), sort_keys=True, indent=4, separators=(',',':')))			
+		else:
+			logging.debug('If not debug, would post: requests.post(' + str(url) +') with params=' + str(params))
+
+	def update(self, datapoint_id, data, debug=False):
+		url = BeemAPI.URL
+		url += '/users/' + str(self.user)
+		url += '/goals/' + str(self.goal)
+		url += '/datapoints/' + str(datapoint_id) + '.json'
+
+		params = {'auth_token':self.auth_token, 'value':data, 'comment':'Updated by TogglToBM'}
+
+		if not debug:
+			r = requests.put(url, params=params)
+			logging.debug('Updating... Response:')
+			logging.debug(json.dumps(r.json(), sort_keys=True, indent=4, separators=(',',':')))			
+		else:
+			logging.debug('If not debug, would put: requests.put(' + str(url) +') with params=' + str(params))
 
 if __name__ == '__main__':
 	

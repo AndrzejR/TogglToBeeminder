@@ -4,7 +4,7 @@ from datetime import date, timedelta
 import logging
 from collections import namedtuple
 
-
+debug = False # set to True not to insert or update anything in Beeminder
 
 logging.basicConfig(filename='./logs/' + str(date.today().isoformat().replace('-', '')) + '.log',
 					 level=logging.DEBUG, format='%(asctime)s - %(levelname)s -  %(message)s')
@@ -12,28 +12,31 @@ logging.info("****************** Starting a new run ******************")
 
 today = date.today()
 
-# check BM for updated_at
+# check BM for updated_at - needs some kind of dcm to make sense
+
+bm = bm.BeemAPI()
 
 bm_data = bm.get_data(today)
-logging.debug("Today's data from bm: " + str(bm_data))
-logging.debug("Today's data from bm: " + str(bm_data.id))
-logging.debug("Today's data from bm: " + str(bm_data.value))
+
 
 toggl_data = toggl.get_data(today)
 logging.debug("Today's data from toggl: " + str(toggl_data))
 
-
-
 if toggl_data != 0:
 	if bm_data is not None:
+		logging.debug("Today's data from bm: " + str(bm_data))
+		logging.debug("Today's data from bm: " + str(bm_data.id))
+		logging.debug("Today's data from bm: " + str(bm_data.value))
 		logging.debug('Will update bm.')
-		bm.update(id=bm_data.id, data=toggl_data)
+		bm.update(datapoint_id=bm_data.id, data=toggl_data, debug=debug)
 	else:
-		logging.debug('Will insert into bm.')
-		bm.insert(data=toggl_data)
+		logging.debug('bm_data is None. Will insert into bm.')
+		bm.insert(data=toggl_data, debug=debug)
 else:
 	logging.warning("No data for toggl for today.")
-	
+
+
+
 
 # tomorrow = today + timedelta(days=1)
 
