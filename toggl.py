@@ -37,5 +37,7 @@ def get_data(date):
 	return total_grand_hours
 
 if __name__ == "__main__":
+	logging.basicConfig(filename='./logs/test/toggl_' + str(date.today().isoformat().replace('-','')) + '.log', level=logging.DEBUG,
+						format='%(asctime)s - %(levelname)s -  %(message)s')	
 	today = date.today()
 	get_data(today)
