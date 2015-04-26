@@ -31,8 +31,8 @@ def get_data(date):
 		total_grand_hours = r.json()['total_grand']/3600000
 	else:
 		total_grand_hours = 0
-		
-	print(str(date) + ':' + str(total_grand_hours))
+
+	# print(str(date) + ':' + str(total_grand_hours))
 
 	return total_grand_hours
 

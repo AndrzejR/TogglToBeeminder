@@ -1,21 +1,35 @@
 # this is the main job meant to be scheduled
 import bm, toggl
 from datetime import date, timedelta
-
-# check date
+import logging
 
 today = date.today()
 
-print(bm.get_data(today))
+logging.basicConfig(filename='./logs/' + str(today.isoformat().replace('-', '')) + '.log',
+					 level=logging.DEBUG, format='%(asctime)s - %(levelname)s -  %(message)s')
 
-print(toggl.get_data(today))
+logging.debug("Today's data from bm: " + str(bm.get_data(today)))
 
-tomorrow = today + timedelta(days=1)
+logging.debug("Today's data from toggl: " + str(toggl.get_data(today)))
 
-print(bm.get_data(tomorrow))
+if toggl.get_data(today) != 0:
+	if bm.get_data(today) is not None:
+		logging.debug('Will update bm.')
+	else:
+		logging.debug('Will insert into bm.')
+else:
+	logging.warning("No data for toggl for today.")
+	
 
-print(toggl.get_data(tomorrow))
+# tomorrow = today + timedelta(days=1)
 
+# print("Tomorrow's data from bm: " + str(bm.get_data(tomorrow)))
+
+# print("Tomorrow's data from toggl: " + str(toggl.get_data(tomorrow)))
+
+
+
+# check date
 
 # get datapoint from toggl
 
