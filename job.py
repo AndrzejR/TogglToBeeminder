@@ -1,8 +1,21 @@
 # this is the main job meant to be scheduled
-
-
+import bm, toggl
+from datetime import date, timedelta
 
 # check date
+
+today = date.today()
+
+print(bm.get_data(today))
+
+print(toggl.get_data(today))
+
+tomorrow = today + timedelta(days=1)
+
+print(bm.get_data(tomorrow))
+
+print(toggl.get_data(tomorrow))
+
 
 # get datapoint from toggl
 
