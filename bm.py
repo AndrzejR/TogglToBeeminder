@@ -1,8 +1,8 @@
+import json, logging
 import requests
-import json
 from datetime import date, timedelta
 from collections import namedtuple
-import logging
+
 
 BMDatapoint = namedtuple("BMDatapoint", "id, value")
 
@@ -53,31 +53,42 @@ class BeemAPI:
 		
 
 
-	def get_data(self, date):	
-		date = date.isoformat().replace('-', '')
-		logging.debug(date)
+	def get_data(self, date):
+		"""Requests and returns the datapoint for a given date from Beeminder.
 
-		
-		url = BeemAPI.URL
-		url += '/users/' + str(self.user)
-		url += '/goals/' + str(self.goal)
-		url += '/datapoints.json'
+		Keyword arguments:
+		date -- date to request the data for (no default)
+		Raises:
+		AttributeError -- on incorrect date argument
+		"""
+		try:
+			date = date.isoformat().replace('-', '')
+			logging.debug(date)
 
-		params = {'auth_token':self.auth_token}
+			
+			url = BeemAPI.URL
+			url += '/users/' + str(self.user)
+			url += '/goals/' + str(self.goal)
+			url += '/datapoints.json'
+
+			params = {'auth_token':self.auth_token}
 
 
-		r = requests.get(url, params=params)
+			r = requests.get(url, params=params)
 
-		logging.debug(json.dumps(r.json(), sort_keys=True, indent=4, separators=(',',':')))
+			logging.debug(json.dumps(r.json(), sort_keys=True, indent=4, separators=(',',':')))
 
-		result = None
-		for sth in r.json():
-			if sth['daystamp'] == date:
-				logging.debug('datapoints id is: ' + str(sth['id']))				
-				logging.debug('datapoint is: '+str(sth['daystamp']) + ' : ' + str(sth['value']))							
-				result = BMDatapoint(sth['id'], sth['value'])
+			result = None
+			for sth in r.json():
+				if sth['daystamp'] == date:
+					logging.debug('datapoints id is: ' + str(sth['id']))				
+					logging.debug('datapoint is: '+str(sth['daystamp']) + ' : ' + str(sth['value']))							
+					result = BMDatapoint(sth['id'], sth['value'])
 
-		return result
+			return result
+		except AttributeError as e:
+			logging.error(e)
+			raise			
 
 	def insert(self, data, debug=False):
 
@@ -110,14 +121,21 @@ class BeemAPI:
 		else:
 			logging.debug('If not debug, would put: requests.put(' + str(url) +') with params=' + str(params))
 
+
 if __name__ == '__main__':
 	
 	logging.basicConfig(filename='./logs/test/bm_' + str(date.today().isoformat().replace('-','')) + '.log', level=logging.DEBUG,
 						format='%(asctime)s - %(levelname)s -  %(message)s')
+
 	day = date.today() - timedelta(days=1)
+
 	bm = BeemAPI()
-	# bm_data = bm.get_data(day)
-	# logging.debug("data from bm: " + str(bm_data))
-	# logging.debug("data from bm: " + str(bm_data.id))
-	# logging.debug("data from bm: " + str(bm_data.value))
+
+	bm_data = bm.get_data(day)
+	logging.debug("data from bm: " + str(bm_data))
+	logging.debug("data from bm: " + str(bm_data.id))
+	logging.debug("data from bm: " + str(bm_data.value))
+
+	bm_data = bm.get_data('incorrect date')
+
 	bm.is_updated()

@@ -1,10 +1,12 @@
-# this is the main job meant to be scheduled
-import bm, toggl
-from datetime import date, timedelta
+"""This is the main executable meant to be scheduled."""
+
 import logging
+import json
+import bm, toggl, dpfile
+from datetime import date, timedelta
 from collections import namedtuple
 
-debug = False # set to True not to insert or update anything in Beeminder
+debug = True # set to True not to insert or update anything in Beeminder
 
 logging.basicConfig(filename='./logs/' + str(date.today().isoformat().replace('-', '')) + '.log',
 					 level=logging.DEBUG, format='%(asctime)s - %(levelname)s -  %(message)s')
@@ -12,26 +14,39 @@ logging.info("****************** Starting a new run ******************")
 
 today = date.today()
 
-# check BM for updated_at - needs some kind of dcm to make sense
-
-bm = bm.BeemAPI()
-
-bm_data = bm.get_data(today)
-
-
 toggl_data = toggl.get_data(today)
 logging.debug("Today's data from toggl: " + str(toggl_data))
 
+
 if toggl_data != 0:
-	if bm_data is not None:
-		logging.debug("Today's data from bm: " + str(bm_data))
-		logging.debug("Today's data from bm: " + str(bm_data.id))
-		logging.debug("Today's data from bm: " + str(bm_data.value))
-		logging.debug('Will update bm.')
-		bm.update(datapoint_id=bm_data.id, data=toggl_data, debug=debug)
+
+	bm = bm.BeemAPI()
+
+	# do we have a datapoint id for today in the file?
+	datapoint_id = dpfile.load_dp_id(today)
+
+	# not in the file? maybe there already is a datapoint in BM?
+	if datapoint_id is None:
+		logging.debug("No DP in the file, let's check in BM.")		
+		bm_data = bm.get_data(today)
+		logging.debug('BM returned id: ' + str(bm_data.id))
+		datapoint_id = bm_data.id
+
+		# it was in BM but not in the file, let's put it there
+		if datapoint_id is not None:
+			dpfile.write_dp_id(datapoint_id, today)
+
+	# if no data for the day in BM, insert needed
+	if datapoint_id is None:
+		logging.debug('datapoint_id is None. Will insert into bm.')
+		new_datapoint_id = bm.insert(data=toggl_data, debug=debug)
+		dpfile.write_dp_id(new_datapoint_id, today)
+	# we have a datapoint, update
 	else:
-		logging.debug('bm_data is None. Will insert into bm.')
-		bm.insert(data=toggl_data, debug=debug)
+		logging.debug('Updating datapoint ' + str(datapoint_id))
+		bm.update(datapoint_id=datapoint_id, data=toggl_data, debug=debug)
+	
+		
 else:
 	logging.warning("No data for toggl for today.")
 
