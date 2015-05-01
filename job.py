@@ -6,7 +6,7 @@ import bm, toggl, dpfile
 from datetime import date, timedelta
 from collections import namedtuple
 
-debug = True # set to True not to insert or update anything in Beeminder
+debug = False # set to True not to insert or update anything in Beeminder
 
 logging.basicConfig(filename='./logs/' + str(date.today().isoformat().replace('-', '')) + '.log',
 					 level=logging.DEBUG, format='%(asctime)s - %(levelname)s -  %(message)s')
@@ -29,8 +29,11 @@ if toggl_data != 0:
 	if datapoint_id is None:
 		logging.debug("No DP in the file, let's check in BM.")		
 		bm_data = bm.get_data(today)
-		logging.debug('BM returned id: ' + str(bm_data.id))
-		datapoint_id = bm_data.id
+		if bm_data is not None:
+			logging.debug('BM returned id: ' + str(bm_data.id))
+			datapoint_id = bm_data.id
+		else:
+			logging.debug('No data returned from BM.')
 
 		# it was in BM but not in the file, let's put it there
 		if datapoint_id is not None:

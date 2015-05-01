@@ -1,10 +1,12 @@
 import json, logging
 import requests
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from collections import namedtuple
 
 
 BMDatapoint = namedtuple("BMDatapoint", "id, value")
+
+DT_FORMAT = '%Y-%m-%d %H:%M:%S'
 
 class BeemAPI:
 
@@ -97,14 +99,19 @@ class BeemAPI:
 		url += '/goals/' + str(self.goal)
 		url += '/datapoints.json'
 
-		params = {'auth_token':self.auth_token, 'value':data, 'comment':'Added by TogglToBM'}
+		now = datetime.strftime(datetime.utcnow(), DT_FORMAT) + ' UTC'
+		params = {'auth_token':self.auth_token, 'value':data, 'comment':'Added by TogglToBM on ' + now}
 
 		if not debug:
 			r = requests.post(url, params=params)
 			logging.debug('Inserting... Response:')
-			logging.debug(json.dumps(r.json(), sort_keys=True, indent=4, separators=(',',':')))			
+			logging.debug(json.dumps(r.json(), sort_keys=True, indent=4, separators=(',',':')))
+
+			return str(r.json()['id'])
+
 		else:
-			logging.debug('If not debug, would post: requests.post(' + str(url) +') with params=' + str(params))
+			logging.debug('If not debug, would post: requests.post(' + str(url) +') with params=' + str(params))			
+		
 
 	def update(self, datapoint_id, data, debug=False):
 		url = BeemAPI.URL
@@ -112,7 +119,8 @@ class BeemAPI:
 		url += '/goals/' + str(self.goal)
 		url += '/datapoints/' + str(datapoint_id) + '.json'
 
-		params = {'auth_token':self.auth_token, 'value':data, 'comment':'Updated by TogglToBM'}
+		now = datetime.strftime(datetime.utcnow(), DT_FORMAT) + ' UTC'
+		params = {'auth_token':self.auth_token, 'value':data, 'comment':'Updated by TogglToBM on ' + now}
 
 		if not debug:
 			r = requests.put(url, params=params)
