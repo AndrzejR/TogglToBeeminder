@@ -1,43 +1,50 @@
+"""Gets the data from Toggl."""
+
 import requests
 import json
-from datetime import date, timedelta
+import logging
+from datetime import date
 
-def get_data(date):
+def get_data(datapoint_date):
+    """Requests summary time for a given date and returns in hours."""
+    api_token = None
+    with open('settings.conf', 'r') as toggl_config:
+        settings = toggl_config.read().splitlines()
+        api_token = settings[0]
+        user_agent = settings[1]
+        workspace_id = settings[2]
 
-	api_token = None
-	with open('settings.conf', 'r') as f:
-		settings = f.read().splitlines()
-		api_token = settings[0]
-		user_agent = settings[1]
-		workspace_id = settings[2]
+    datapoint_date = datapoint_date.isoformat()
 
-	date = date.isoformat()
+    payload = {'user_agent':user_agent, 'workspace_id':workspace_id,
+                 'since':datapoint_date, 'until':datapoint_date,
+                 'grouping':'clients', 'subgrouping':'projects'}
 
-	# print(yesterday)
+    response = requests.get('https://www.toggl.com/reports/api/v2/summary',
+                     auth=(api_token, 'api_token'), params=payload)
 
-	payload = {'user_agent':user_agent, 'workspace_id':workspace_id,
-				 'since':date, 'until':date, 'grouping':'clients',
-				 'subgrouping':'projects'}
+    logging.debug(str(json.dumps(response.json(), sort_keys=True,
+                                 indent=4, separators=(',', ':'))))
 
-	r = requests.get('https://www.toggl.com/reports/api/v2/summary', auth=(api_token, 'api_token'), params=payload)
+    total_grand_ms = response.json()['total_grand']
 
-	# print(json.dumps(r.json(), sort_keys=True, indent=4, separators=(',',':')))
+    if total_grand_ms is not None:
+        total_grand_hours = response.json()['total_grand']/3600000
+    else:
+        total_grand_hours = 0
 
-	# rjson = r.json()
+    logging.debug(str(datapoint_date) + ':' + str(total_grand_hours))
 
-	total_grand_ms = r.json()['total_grand']
-
-	if total_grand_ms is not None:
-		total_grand_hours = r.json()['total_grand']/3600000
-	else:
-		total_grand_hours = 0
-
-	# print(str(date) + ':' + str(total_grand_hours))
-
-	return total_grand_hours
+    return total_grand_hours
 
 if __name__ == "__main__":
-	logging.basicConfig(filename='./logs/test/toggl_' + str(date.today().isoformat().replace('-','')) + '.log', level=logging.DEBUG,
-						format='%(asctime)s - %(levelname)s -  %(message)s')	
-	today = date.today()
-	get_data(today)
+
+    LOG_DIR = './logs/test/toggl_'
+    LOG_DATE = str(date.today().isoformat().replace('-', ''))
+    LOG_FORMAT = '%(asctime)s - %(levelname)s - %(message)s'
+
+    logging.basicConfig(filename=LOG_DIR + LOG_DATE + '.log',
+                         level=logging.DEBUG, format=LOG_FORMAT)
+
+    TODAY = date.today()
+    get_data(TODAY)

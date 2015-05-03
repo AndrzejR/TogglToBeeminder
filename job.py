@@ -1,57 +1,60 @@
 """This is the main executable meant to be scheduled."""
 
 import logging
-import json
 import bm, toggl, dpfile
-from datetime import date, timedelta
-from collections import namedtuple
+from datetime import date
 
-debug = False # set to True not to insert or update anything in Beeminder
+DEBUG = False # set to True not to insert or update anything in Beeminder
 
-logging.basicConfig(filename='./logs/' + str(date.today().isoformat().replace('-', '')) + '.log',
-					 level=logging.DEBUG, format='%(asctime)s - %(levelname)s -  %(message)s')
+LOG_DIR = './logs/'
+LOG_DATE = str(date.today().isoformat().replace('-', ''))
+LOG_FORMAT = '%(asctime)s - %(levelname)s - %(message)s'
+
+logging.basicConfig(filename=LOG_DIR + LOG_DATE + '.log',
+                    level=logging.DEBUG, format=LOG_FORMAT)
+
 logging.info("****************** Starting a new run ******************")
 
-today = date.today()
+TODAY = date.today()
 
-toggl_data = toggl.get_data(today)
-logging.debug("Today's data from toggl: " + str(toggl_data))
+TOGGL_DATA = toggl.get_data(TODAY)
+logging.debug("Today's data from toggl: " + str(TOGGL_DATA))
 
 
-if toggl_data != 0:
+if TOGGL_DATA != 0:
 
-	bm = bm.BeemAPI()
+    BM = bm.BeemAPI()
 
-	# do we have a datapoint id for today in the file?
-	datapoint_id = dpfile.load_dp_id(today)
+    # do we have a datapoint id for today in the file?
+    DATAPOINT_ID = dpfile.load_dp_id(TODAY)
 
-	# not in the file? maybe there already is a datapoint in BM?
-	if datapoint_id is None:
-		logging.debug("No DP in the file, let's check in BM.")		
-		bm_data = bm.get_data(today)
-		if bm_data is not None:
-			logging.debug('BM returned id: ' + str(bm_data.id))
-			datapoint_id = bm_data.id
-		else:
-			logging.debug('No data returned from BM.')
+    # not in the file? maybe there already is a datapoint in BM?
+    if DATAPOINT_ID is None:
+        logging.debug("No DP in the file, let's check in BM.")
+        BM_DATA = BM.get_data(TODAY)
+        if BM_DATA is not None:
+            logging.debug('BM returned id: ' + str(BM_DATA.id))
+            DATAPOINT_ID = BM_DATA.id
+        else:
+            logging.debug('No data returned from BM.')
 
-		# it was in BM but not in the file, let's put it there
-		if datapoint_id is not None:
-			dpfile.write_dp_id(datapoint_id, today)
+        # it was in BM but not in the file, let's put it there
+        if DATAPOINT_ID is not None:
+            dpfile.write_dp_id(DATAPOINT_ID, TODAY)
 
-	# if no data for the day in BM, insert needed
-	if datapoint_id is None:
-		logging.debug('datapoint_id is None. Will insert into bm.')
-		new_datapoint_id = bm.insert(data=toggl_data, debug=debug)
-		dpfile.write_dp_id(new_datapoint_id, today)
-	# we have a datapoint, update
-	else:
-		logging.debug('Updating datapoint ' + str(datapoint_id))
-		bm.update(datapoint_id=datapoint_id, data=toggl_data, debug=debug)
-	
-		
+    # if no data for the day in BM, insert needed
+    if DATAPOINT_ID is None:
+        logging.debug('datapoint_id is None. Will insert into bm.')
+        NEW_DATAPOINT_ID = BM.insert(data=TOGGL_DATA, debug=DEBUG)
+        dpfile.write_dp_id(NEW_DATAPOINT_ID, TODAY)
+    # we have a datapoint, update
+    else:
+        logging.debug('Updating datapoint ' + str(DATAPOINT_ID))
+        BM.update(datapoint_id=DATAPOINT_ID, data=TOGGL_DATA, debug=DEBUG)
+
+
 else:
-	logging.warning("No data for toggl for today.")
+    logging.warning("No data for toggl for today.")
 
 
 
@@ -62,18 +65,8 @@ else:
 
 # print("Tomorrow's data from toggl: " + str(toggl.get_data(tomorrow)))
 
-
-
-# check date
-
-# get datapoint from toggl
-
-# check if datapoint for this day exists in bm
-
-# upsert data from toggl
-
-
 # what can go wrong? I don't want to add points if there's one already
 # what about running not for today's date? if one of the endpoints goes down?
-# begin with a check for which days there are already bm datapoints? back to a week or two?
+# begin with a check for which days there are already bm datapoints?
+# back to a week or two?
 # or just create a local DCM storing this data?

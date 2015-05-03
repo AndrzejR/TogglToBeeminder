@@ -1,3 +1,5 @@
+"""Requests and inserts data into Beeminder."""
+
 import json, logging
 import requests
 from datetime import date, timedelta, datetime
@@ -8,142 +10,159 @@ BMDatapoint = namedtuple("BMDatapoint", "id, value")
 
 DT_FORMAT = '%Y-%m-%d %H:%M:%S'
 
-class BeemAPI:
+class BeemAPI(object):
+    """A wrapper class for Beeminder's API requests."""
 
-	URL = 'https://www.beeminder.com/api/v1/'
+    URL = 'https://www.beeminder.com/api/v1/'
 
-	def __init__(self):
-		with open('bm.conf', 'r') as f:
-			settings = f.read().splitlines()
-			self.auth_token = settings[0]
-			self.user = settings[1]
-			self.goal = settings[2]
+    def __init__(self):
+        with open('bm.conf', 'r') as bm_config:
+            settings = bm_config.read().splitlines()
+            self.auth_token = settings[0]
+            self.user = settings[1]
+            self.goal = settings[2]
 
-	def is_updated(self):
+    def is_updated(self):
+        """Returns if bm user was updated at all since last run."""
 
-		last_updated = 0
+        last_updated = 0
 
-		try:
-			with open('updated_at', 'r') as f:
-				last_updated = int(f.readline())
-		except Exception:
-			with open('updated_at', 'w') as f:
-				f.write(str(last_updated))
+        try:
+            with open('updated_at', 'r') as updated_file:
+                last_updated = int(updated_file.readline())
+        except FileNotFoundError:
+            with open('updated_at', 'w') as updated_file:
+                updated_file.write(str(last_updated))
 
-		url = BeemAPI.URL
-		url += '/users/' + str(self.user) + '.json'
-		params = {'auth_token':self.auth_token}		
+        url = BeemAPI.URL
+        url += '/users/' + str(self.user) + '.json'
+        params = {'auth_token':self.auth_token}
 
-		r = requests.get(url, params=params)
+        response = requests.get(url, params=params)
 
-		logging.debug(json.dumps(r.json(), sort_keys=True, indent=4, separators=(',',':')))
+        logging.debug(json.dumps(response.json(), sort_keys=True,
+                                 indent=4, separators=(',', ':')))
 
-		j = r.json()
+        updated_at = int(response.json()['updated_at'])
 
-		updated_at = int(j['updated_at'])
+        logging.debug('updated_at is: ' + str(updated_at))
 
-		logging.debug('updated_at is: ' + str(updated_at))
-
-		if last_updated >= updated_at:
-			logging.debug('last_updated >= updated_at')
-			return False
-		else:
-			logging.debug('last_updated < updated_at')
-			with open('updated_at', 'w') as f:
-				f.write(str(updated_at))
-			return True
-		
-
-
-	def get_data(self, date):
-		"""Requests and returns the datapoint for a given date from Beeminder.
-
-		Keyword arguments:
-		date -- date to request the data for (no default)
-		Raises:
-		AttributeError -- on incorrect date argument
-		"""
-		try:
-			date = date.isoformat().replace('-', '')
-			logging.debug(date)
-
-			
-			url = BeemAPI.URL
-			url += '/users/' + str(self.user)
-			url += '/goals/' + str(self.goal)
-			url += '/datapoints.json'
-
-			params = {'auth_token':self.auth_token}
+        if last_updated >= updated_at:
+            logging.debug('last_updated >= updated_at')
+            return False
+        else:
+            logging.debug('last_updated < updated_at')
+            with open('updated_at', 'w') as updated_file:
+                updated_file.write(str(updated_at))
+            return True
 
 
-			r = requests.get(url, params=params)
 
-			logging.debug(json.dumps(r.json(), sort_keys=True, indent=4, separators=(',',':')))
+    def get_data(self, datapoint_date):
+        """Requests and returns the datapoint for a given date from Beeminder.
 
-			result = None
-			for sth in r.json():
-				if sth['daystamp'] == date:
-					logging.debug('datapoints id is: ' + str(sth['id']))				
-					logging.debug('datapoint is: '+str(sth['daystamp']) + ' : ' + str(sth['value']))							
-					result = BMDatapoint(sth['id'], sth['value'])
+        Keyword arguments:
+        datapoint_date -- date to request the data for (no default)
+        Raises:
+        AttributeError -- on incorrect date argument
+        """
 
-			return result
-		except AttributeError as e:
-			logging.error(e)
-			raise			
+        try:
+            datapoint_date = datapoint_date.isoformat().replace('-', '')
+            logging.debug(datapoint_date)
 
-	def insert(self, data, debug=False):
 
-		url = BeemAPI.URL
-		url += '/users/' + str(self.user)
-		url += '/goals/' + str(self.goal)
-		url += '/datapoints.json'
+            url = BeemAPI.URL
+            url += '/users/' + str(self.user)
+            url += '/goals/' + str(self.goal)
+            url += '/datapoints.json'
 
-		now = datetime.strftime(datetime.utcnow(), DT_FORMAT) + ' UTC'
-		params = {'auth_token':self.auth_token, 'value':data, 'comment':'Added by TogglToBM on ' + now}
+            params = {'auth_token':self.auth_token}
 
-		if not debug:
-			r = requests.post(url, params=params)
-			logging.debug('Inserting... Response:')
-			logging.debug(json.dumps(r.json(), sort_keys=True, indent=4, separators=(',',':')))
 
-			return str(r.json()['id'])
+            response = requests.get(url, params=params)
 
-		else:
-			logging.debug('If not debug, would post: requests.post(' + str(url) +') with params=' + str(params))			
-		
+            logging.debug(json.dumps(response.json(), sort_keys=True,
+                                     indent=4, separators=(',', ':')))
 
-	def update(self, datapoint_id, data, debug=False):
-		url = BeemAPI.URL
-		url += '/users/' + str(self.user)
-		url += '/goals/' + str(self.goal)
-		url += '/datapoints/' + str(datapoint_id) + '.json'
+            result = None
+            for sth in response.json():
+                if sth['daystamp'] == datapoint_date:
+                    logging.debug('datapoints id is: ' + str(sth['id']))
+                    logging.debug('datapoint is: ' + str(sth['daystamp']) +
+                                  ' : ' + str(sth['value']))
+                    result = BMDatapoint(sth['id'], sth['value'])
 
-		now = datetime.strftime(datetime.utcnow(), DT_FORMAT) + ' UTC'
-		params = {'auth_token':self.auth_token, 'value':data, 'comment':'Updated by TogglToBM on ' + now}
+            return result
+        except AttributeError as ex:
+            logging.error(ex)
+            raise
 
-		if not debug:
-			r = requests.put(url, params=params)
-			logging.debug('Updating... Response:')
-			logging.debug(json.dumps(r.json(), sort_keys=True, indent=4, separators=(',',':')))			
-		else:
-			logging.debug('If not debug, would put: requests.put(' + str(url) +') with params=' + str(params))
+    def insert(self, data, debug=False):
+        """Creates a new datapoint with the provided value."""
+
+        url = BeemAPI.URL
+        url += '/users/' + str(self.user)
+        url += '/goals/' + str(self.goal)
+        url += '/datapoints.json'
+
+        now = datetime.strftime(datetime.utcnow(), DT_FORMAT) + ' UTC'
+        params = {'auth_token':self.auth_token, 'value':data,
+                  'comment':'Added by TogglToBM on ' + now}
+
+        if not debug:
+            response = requests.post(url, params=params)
+            logging.debug('Inserting... Response:')
+            logging.debug(json.dumps(response.json(), sort_keys=True,
+                          indent=4, separators=(',', ':')))
+
+            return str(response.json()['id'])
+
+        else:
+            logging.debug('If not debug, would post: requests.post(' +
+                          str(url) +') with params=' + str(params))
+
+
+    def update(self, datapoint_id, data, debug=False):
+        """Updates an existing datapoint with new value."""
+
+        url = BeemAPI.URL
+        url += '/users/' + str(self.user)
+        url += '/goals/' + str(self.goal)
+        url += '/datapoints/' + str(datapoint_id) + '.json'
+
+        now = datetime.strftime(datetime.utcnow(), DT_FORMAT) + ' UTC'
+        params = {'auth_token':self.auth_token, 'value':data,
+                  'comment':'Updated by TogglToBM on ' + now}
+
+        if not debug:
+            response = requests.put(url, params=params)
+            logging.debug('Updating... Response:')
+            logging.debug(json.dumps(response.json(), sort_keys=True,
+                          indent=4, separators=(',', ':')))
+        else:
+            logging.debug('If not debug, would put: requests.put(' +
+                          str(url) +') with params=' + str(params))
 
 
 if __name__ == '__main__':
-	
-	logging.basicConfig(filename='./logs/test/bm_' + str(date.today().isoformat().replace('-','')) + '.log', level=logging.DEBUG,
-						format='%(asctime)s - %(levelname)s -  %(message)s')
 
-	day = date.today() - timedelta(days=1)
+    LOG_DIR = './logs/test/bm_'
+    LOG_DATE = str(date.today().isoformat().replace('-', ''))
+    LOG_FORMAT = '%(asctime)s - %(levelname)s - %(message)s'
 
-	bm = BeemAPI()
+    logging.basicConfig(filename=LOG_DIR + LOG_DATE + '.log',
+                         level=logging.DEBUG, format=LOG_FORMAT)
 
-	bm_data = bm.get_data(day)
-	logging.debug("data from bm: " + str(bm_data))
-	logging.debug("data from bm: " + str(bm_data.id))
-	logging.debug("data from bm: " + str(bm_data.value))
+    DAY = date.today() - timedelta(days=1)
 
-	bm_data = bm.get_data('incorrect date')
+    BM = BeemAPI()
 
-	bm.is_updated()
+    BM_DATA = BM.get_data(DAY)
+    logging.debug("data from bm: " + str(BM_DATA))
+    logging.debug("data from bm: " + str(BM_DATA.id))
+    logging.debug("data from bm: " + str(BM_DATA.value))
+
+    BM_DATA = BM.get_data('incorrect date')
+
+    BM.is_updated()
