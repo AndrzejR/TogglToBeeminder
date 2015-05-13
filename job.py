@@ -4,7 +4,7 @@ import logging
 import bm, toggl, dpfile
 from datetime import date
 
-DEBUG = False # set to True not to insert or update anything in Beeminder
+DEBUG = True # set to True not to insert or update anything in Beeminder
 
 LOG_DIR = './logs/'
 LOG_DATE = str(date.today().isoformat().replace('-', ''))
