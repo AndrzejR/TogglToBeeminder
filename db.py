@@ -1,39 +1,52 @@
-"""This module is intended to save datapoints (or more) to a db."""
+"""This module is intended to save datapoints (or more) to the db."""
 
 import sqlite3
 import logging
 from datetime import date
 
 DATABASE_FILE = 'ttbm.db'
+CONNECTION = sqlite3.connect(DATABASE_FILE)
 
 def load_dp_id(datapoint_date):
-    """Loads the datapoint id for the given date.
+    """Returns the datapoint id for the given date.
 
-    ??? Creates the file if it doesn't exist.
-    Returns None if no datafile, or no datapoint id for the given date.
-    ??? Raises ValueError if the file is broken.
+    Arguments:
+    datapoint_date -- date
+
+    Returns None if there is no datapoint for the given date.
     """
+
+    if not isinstance(datapoint_date, date):
+        raise ValueError('Incorrect argument type - datapoint_date.')
+
     datapoint_id = None
     try:
-        conn = sqlite3.connect(DATABASE_FILE)
-        cur = conn.cursor()
-
-        # cur.execute('''create table datapoint
-        #                 (date text, id text)''')
+        logging.debug("received datapoint_date: " + str(datapoint_date))
+        cur = CONNECTION.cursor()
         dp_t = datapoint_date,
-        cur.execute('select id from datapoint where date=?',
-                     dp_t)
+        cur.execute('select id from bm_datapoint where daystamp=?', dp_t)
         datapoint_id = cur.fetchone()
-        print(datapoint_id)
+        logging.debug('datapoint_id from db: ' + str(datapoint_id))
+        return datapoint_id[0]
 
     except Exception as exc:
-        print(exc)
+        logging.debug(exc)
 
-    return datapoint_id
+def write_dp_id(datapoint_id, datapoint_date, value=0):
+    """Writes the datapoint id for the given date into the db."""
+    try:
+        cur = CONNECTION.cursor()
+        datapoint = (datapoint_id, value, datapoint_date)
+        logging.debug(datapoint)
+        cur.execute("""insert into bm_datapoint
+                    (id, value, daystamp)
+                    values
+                    (?,?,?)"""
+                    , datapoint)
+        CONNECTION.commit()
 
-def write_dp_id(datapoint_id, datapoint_date):
-    """Writes the given datapoint id for the given date into the db."""
-    raise NotImplementedError('Not implemented yet.')
+    except Exception as exc:
+        logging.debug(exc)
 
 
 if __name__ == '__main__':
@@ -45,7 +58,40 @@ if __name__ == '__main__':
     logging.basicConfig(filename=LOG_DIR + LOG_DATE + '.log',
                          level=logging.DEBUG, format=LOG_FORMAT)
 
-    TODAY = date.today()
-    load_dp_id(TODAY)
-    # write_dp_id('xXx_test_id_xXx', TODAY)
-    load_dp_id(TODAY)
+    try:
+        logging.debug('*** read test ***')
+        cur = CONNECTION.cursor()
+        cur.execute("""insert into bm_datapoint
+                    (id, value, daystamp)
+                    values
+                    ('abc1', 10, '2015-05-16')
+                    """)
+        cur.execute("""insert into bm_datapoint
+                    (id, value, daystamp)
+                    values
+                    ('abc2', 5, '2015-05-01')
+                    """)
+        CONNECTION.commit()
+
+        TODAY = date.today()
+        logging.debug(TODAY)
+        logging.debug("today's dp: " + str(load_dp_id(TODAY)))
+
+        TEST_DATE = date(2015, 5, 1)
+        logging.debug("2015-05-01's dp: " + str(load_dp_id(TEST_DATE)))
+
+    finally:
+        cur.execute("""delete from bm_datapoint
+                    where id in ('abc1', 'abc2')""")
+        CONNECTION.commit()
+
+    try:
+        logging.debug('*** write test ***')
+        WRITE_TEST_DATE = date(2015, 1, 13)
+        write_dp_id('write_test_1', WRITE_TEST_DATE, 13)
+        logging.debug("write test dp: " + str(load_dp_id(WRITE_TEST_DATE)))
+    finally:
+        cur = CONNECTION.cursor()
+        cur.execute("""delete from bm_datapoint
+                    where id in ('write_test_1')""")
+        CONNECTION.commit()

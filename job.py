@@ -1,10 +1,10 @@
 """This is the main executable meant to be scheduled."""
 
 import logging
-import bm, toggl, dpfile
+import bm, toggl, db
 from datetime import date
 
-DEBUG = True # set to True not to insert or update anything in Beeminder
+DEBUG = False # set to True not to insert or update anything in Beeminder
 
 LOG_DIR = './logs/'
 LOG_DATE = str(date.today().isoformat().replace('-', ''))
@@ -26,7 +26,7 @@ if TOGGL_DATA != 0:
     BM = bm.BeemAPI()
 
     # do we have a datapoint id for today in the file?
-    DATAPOINT_ID = dpfile.load_dp_id(TODAY)
+    DATAPOINT_ID = db.load_dp_id(TODAY)
 
     # not in the file? maybe there already is a datapoint in BM?
     if DATAPOINT_ID is None:
@@ -40,13 +40,13 @@ if TOGGL_DATA != 0:
 
         # it was in BM but not in the file, let's put it there
         if DATAPOINT_ID is not None:
-            dpfile.write_dp_id(DATAPOINT_ID, TODAY)
+            db.write_dp_id(DATAPOINT_ID, TODAY)
 
     # if no data for the day in BM, insert needed
     if DATAPOINT_ID is None:
         logging.debug('datapoint_id is None. Will insert into bm.')
         NEW_DATAPOINT_ID = BM.insert(data=TOGGL_DATA, debug=DEBUG)
-        dpfile.write_dp_id(NEW_DATAPOINT_ID, TODAY)
+        db.write_dp_id(NEW_DATAPOINT_ID, TODAY)
     # we have a datapoint, update
     else:
         logging.debug('Updating datapoint ' + str(DATAPOINT_ID))
