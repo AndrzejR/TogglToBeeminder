@@ -5,14 +5,13 @@ import json
 import logging
 from datetime import date
 
+import db
+
 def get_data(datapoint_date):
     """Requests summary time for a given date and returns in hours."""
-    api_token = None
-    with open('settings.conf', 'r') as toggl_config:
-        settings = toggl_config.read().splitlines()
-        api_token = settings[0]
-        user_agent = settings[1]
-        workspace_id = settings[2]
+    api_token = db.get_parameter('toggl_api_token')
+    user_agent = db.get_parameter('toggl_user_agent')
+    workspace_id = db.get_parameter('toggl_wrkspc_id')
 
     datapoint_date = datapoint_date.isoformat()
 

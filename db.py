@@ -30,7 +30,7 @@ def load_dp_id(datapoint_date):
         return datapoint_id[0]
 
     except Exception as exc:
-        logging.error(exc)
+        logging.debug(exc)
 
 def write_dp_id(datapoint_id, datapoint_date, value=0):
     """Writes the datapoint id for the given date into the db."""
@@ -58,7 +58,7 @@ def get_parameter(param_name):
         return cur.fetchone()[0]
 
     except Exception as exc:
-        logging.debug(exc)
+        logging.error(exc)
 
 if __name__ == '__main__':
 

@@ -5,6 +5,8 @@ import requests
 from datetime import date, timedelta, datetime
 from collections import namedtuple
 
+import db
+
 
 BMDatapoint = namedtuple("BMDatapoint", "id, value")
 
@@ -16,11 +18,9 @@ class BeemAPI(object):
     URL = 'https://www.beeminder.com/api/v1/'
 
     def __init__(self):
-        with open('bm.conf', 'r') as bm_config:
-            settings = bm_config.read().splitlines()
-            self.auth_token = settings[0]
-            self.user = settings[1]
-            self.goal = settings[2]
+        self.auth_token = db.get_parameter('bm_api_token')
+        self.user = db.get_parameter('bm_user_name')
+        self.goal = db.get_parameter('bm_goal_url')
 
     def is_updated(self):
         """Returns if bm user was updated at all since last run."""
