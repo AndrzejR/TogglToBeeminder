@@ -1,0 +1,4 @@
+1. copy to the server (e.g. AWS)
+2. run db_create.py
+3. run insert_params.py
+4. create/modify cron job

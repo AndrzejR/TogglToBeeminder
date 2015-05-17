@@ -30,7 +30,7 @@ def load_dp_id(datapoint_date):
         return datapoint_id[0]
 
     except Exception as exc:
-        logging.debug(exc)
+        logging.error(exc)
 
 def write_dp_id(datapoint_id, datapoint_date, value=0):
     """Writes the datapoint id for the given date into the db."""
@@ -48,6 +48,17 @@ def write_dp_id(datapoint_id, datapoint_date, value=0):
     except Exception as exc:
         logging.debug(exc)
 
+def get_parameter(param_name):
+    try:
+        cur = CONNECTION.cursor()
+        cur.execute("""select param_value
+                    from parameter
+                    where param_name=?"""
+                    , (param_name,))
+        return cur.fetchone()[0]
+
+    except Exception as exc:
+        logging.debug(exc)
 
 if __name__ == '__main__':
 
@@ -94,4 +105,17 @@ if __name__ == '__main__':
         cur = CONNECTION.cursor()
         cur.execute("""delete from bm_datapoint
                     where id in ('write_test_1')""")
+        CONNECTION.commit()
+
+    try:
+        cur = CONNECTION.cursor()
+        cur.execute("""insert into parameter
+                    (param_name, param_value)
+                    values
+                    ('test_param', 'test_value')""")
+        print(get_parameter('test_param'))
+    finally:
+        cur = CONNECTION.cursor()
+        cur.execute("""delete from parameter
+                    where param_name in ('test_param')""")
         CONNECTION.commit()
