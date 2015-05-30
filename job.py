@@ -25,36 +25,35 @@ if TOGGL_DATA != 0:
 
     BM = bm.BeemAPI()
 
-    # do we have a datapoint id for today in the file?
     DATAPOINT_ID = db.load_dp_id(TODAY)
 
     # not in the file? maybe there already is a datapoint in BM?
-    if DATAPOINT_ID is None:
-        logging.debug("No DP in the file, let's check in BM.")
-        BM_DATA = BM.get_data(TODAY)
-        if BM_DATA is not None:
-            logging.debug('BM returned id: ' + str(BM_DATA.id))
-            DATAPOINT_ID = BM_DATA.id
-        else:
-            logging.debug('No data returned from BM.')
+    # if DATAPOINT_ID is None:
+    #     logging.debug("No DP in the file, let's check in BM.")
+    #     BM_DATA = BM.get_data(TODAY)
+    #     if BM_DATA is not None:
+    #         logging.debug('BM returned id: ' + str(BM_DATA.id))
+    #         DATAPOINT_ID = BM_DATA.id
+    #     else:
+    #         logging.debug('No data returned from BM.')
 
-        # it was in BM but not in the file, let's put it there
-        if DATAPOINT_ID is not None:
-            db.write_dp_id(DATAPOINT_ID, TODAY)
+    #     # it was in BM but not in the file, let's put it there
+    #     if DATAPOINT_ID is not None:
+    #         db.write_dp_id(DATAPOINT_ID, TODAY)
 
-    # if no data for the day in BM, insert needed
+    # we don't have a datapoint id for the day, insert needed
     if DATAPOINT_ID is None:
         logging.debug('datapoint_id is None. Will insert into bm.')
         NEW_DATAPOINT_ID = BM.insert(data=TOGGL_DATA, debug=DEBUG)
         db.write_dp_id(NEW_DATAPOINT_ID, TODAY)
-    # we have a datapoint, update
+    # we have a datapoint id, update
     else:
         logging.debug('Updating datapoint ' + str(DATAPOINT_ID))
         BM.update(datapoint_id=DATAPOINT_ID, data=TOGGL_DATA, debug=DEBUG)
 
 
 else:
-    logging.warning("No data for toggl for today.")
+    logging.info("No data for toggl for today.")
 
 
 

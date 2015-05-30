@@ -99,7 +99,10 @@ class BeemAPI(object):
             raise
 
     def insert(self, data, debug=False):
-        """Creates a new datapoint with the provided value."""
+        """Creates a new datapoint with the provided value.
+
+        Returns the new datapoint's id.
+        """
 
         url = BeemAPI.URL
         url += '/users/' + str(self.user)
@@ -108,7 +111,7 @@ class BeemAPI(object):
 
         now = datetime.strftime(datetime.utcnow(), DT_FORMAT) + ' UTC'
         params = {'auth_token':self.auth_token, 'value':data,
-                  'comment':'Added by TogglToBM on ' + now}
+                  'comment':'Inserted by TogglToBM on ' + now}
 
         if not debug:
             response = requests.post(url, params=params)
