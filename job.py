@@ -20,7 +20,7 @@ TODAY = date.today()
 TOGGL_DATA = toggl.get_data(TODAY)
 logging.debug("Today's data from toggl: " + str(TOGGL_DATA))
 
-
+# add: is the toggl data different than last time?
 if TOGGL_DATA != 0:
 
     BM = bm.BeemAPI()
